@@ -21,11 +21,18 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
-#if os(iOS) || os(visionOS)
+#if os(iOS) || os(tvOS) || os(visionOS)
 import UIKit
 
 internal struct AnimationContext {
   let view: UIView
   let container: UIView
+}
+#elseif os(macOS)
+import AppKit
+
+internal struct AnimationContext {
+  let view: NSView
+  let container: NSView
 }
 #endif

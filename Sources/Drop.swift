@@ -21,21 +21,32 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
-#if os(iOS) || os(visionOS)
+#if os(iOS) || os(tvOS) || os(visionOS)
 import UIKit
+#elseif os(macOS)
+import AppKit
+#endif
+
+#if os(iOS) || os(tvOS) || os(visionOS) || os(macOS)
 
 /// An object representing a drop.
 @available(iOSApplicationExtension, unavailable)
+@available(tvOSApplicationExtension, unavailable)
+@available(macOSApplicationExtension, unavailable)
 public struct Drop: ExpressibleByStringLiteral {
   /// Create a new drop.
   /// - Parameters:
   ///   - title: Title.
   ///   - titleNumberOfLines: Maximum number of lines that `title` can occupy. Defaults to `1`.
   ///   A value of 0 means no limit.
+  ///   - titleColor: Optional title text color. Defaults to `nil` which uses the system label color.
   ///   - subtitle: Optional subtitle. Defaults to `nil`.
   ///   - subtitleNumberOfLines: Maximum number of lines that `subtitle` can occupy. Defaults to `1`.
   ///   A value of 0 means no limit.
+  ///   - subtitleColor: Optional subtitle text color. Defaults to `nil` which uses the system secondary label color.
   ///   - icon: Optional icon.
+  ///   - iconColor: Optional icon tint color. Defaults to `nil` which uses the app's accent color.
+  ///   - background: Background style. Defaults to `.standard`. Use `.glass` for Liquid Glass effect (iOS/macOS 26+).
   ///   - action: Optional action.
   ///   - position: Position. Defaults to `Drop.Position.top`.
   ///   - duration: Duration. Defaults to `Drop.Duration.recommended`.
@@ -43,9 +54,22 @@ public struct Drop: ExpressibleByStringLiteral {
   public init(
     title: String,
     titleNumberOfLines: Int = 1,
+    #if os(macOS)
+    titleColor: NSColor? = nil,
     subtitle: String? = nil,
     subtitleNumberOfLines: Int = 1,
+    subtitleColor: NSColor? = nil,
+    icon: NSImage? = nil,
+    iconColor: NSColor? = nil,
+    #else
+    titleColor: UIColor? = nil,
+    subtitle: String? = nil,
+    subtitleNumberOfLines: Int = 1,
+    subtitleColor: UIColor? = nil,
     icon: UIImage? = nil,
+    iconColor: UIColor? = nil,
+    #endif
+    background: Background = .standard,
     action: Action? = nil,
     position: Position = .top,
     duration: Duration = .recommended,
@@ -53,11 +77,15 @@ public struct Drop: ExpressibleByStringLiteral {
   ) {
     self.title = title.trimmingCharacters(in: .whitespacesAndNewlines)
     self.titleNumberOfLines = titleNumberOfLines
+    self.titleColor = titleColor
     if let subtitle = subtitle?.trimmingCharacters(in: .whitespacesAndNewlines), !subtitle.isEmpty {
       self.subtitle = subtitle
     }
     self.subtitleNumberOfLines = subtitleNumberOfLines
+    self.subtitleColor = subtitleColor
     self.icon = icon
+    self.iconColor = iconColor
+    self.background = background
     self.action = action
     self.position = position
     self.duration = duration
@@ -65,12 +93,13 @@ public struct Drop: ExpressibleByStringLiteral {
     ?? .init(message: [title, subtitle].compactMap { $0 }.joined(separator: ", "))
   }
 
-  /// Create a new accessibility object.
-  /// - Parameter message: Message to be announced when the drop is shown. Defaults to drop's "title, subtitle"
+  /// Create a drop from a string literal.
+  /// - Parameter title: Title string.
   public init(stringLiteral title: String) {
     self.title = title
     titleNumberOfLines = 1
     subtitleNumberOfLines = 1
+    background = .standard
     position = .top
     duration = .recommended
     accessibility = .init(message: title)
@@ -82,14 +111,46 @@ public struct Drop: ExpressibleByStringLiteral {
   /// Maximum number of lines that `title` can occupy. A value of 0 means no limit.
   public var titleNumberOfLines: Int
 
+  #if os(macOS)
+  /// Optional title text color. `nil` uses the system label color.
+  public var titleColor: NSColor?
+
   /// Subtitle.
   public var subtitle: String?
 
   /// Maximum number of lines that `subtitle` can occupy. A value of 0 means no limit.
   public var subtitleNumberOfLines: Int
 
+  /// Optional subtitle text color. `nil` uses the system secondary label color.
+  public var subtitleColor: NSColor?
+
+  /// Icon.
+  public var icon: NSImage?
+
+  /// Optional icon tint color. `nil` uses the app's accent color.
+  public var iconColor: NSColor?
+  #else
+  /// Optional title text color. `nil` uses `.label`.
+  public var titleColor: UIColor?
+
+  /// Subtitle.
+  public var subtitle: String?
+
+  /// Maximum number of lines that `subtitle` can occupy. A value of 0 means no limit.
+  public var subtitleNumberOfLines: Int
+
+  /// Optional subtitle text color. `nil` uses `.secondaryLabel`.
+  public var subtitleColor: UIColor?
+
   /// Icon.
   public var icon: UIImage?
+
+  /// Optional icon tint color. `nil` uses the app's accent color.
+  public var iconColor: UIColor?
+  #endif
+
+  /// Background style.
+  public var background: Background
 
   /// Action.
   public var action: Action?
@@ -146,16 +207,38 @@ public extension Drop {
     /// - Parameters:
     ///   - icon: Optional icon image.
     ///   - handler: Handler to be called when the drop is tapped.
-    public init(icon: UIImage? = nil, handler: @escaping () -> Void) {
+    public init(
+      #if os(macOS)
+      icon: NSImage? = nil,
+      #else
+      icon: UIImage? = nil,
+      #endif
+      handler: @escaping () -> Void
+    ) {
       self.icon = icon
       self.handler = handler
     }
 
+    #if os(macOS)
+    /// Icon.
+    public var icon: NSImage?
+    #else
     /// Icon.
     public var icon: UIImage?
+    #endif
 
     /// Handler.
     public var handler: () -> Void
+  }
+}
+
+public extension Drop {
+  /// An enum representing the background style of a drop.
+  enum Background: Equatable {
+    /// Standard opaque background using the system secondary background color.
+    case standard
+    /// Liquid Glass material background. Falls back to `.standard` on platforms prior to iOS/macOS 26.
+    case glass
   }
 }
 

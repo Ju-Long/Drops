@@ -21,7 +21,7 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
-#if os(iOS) || os(visionOS)
+#if os(iOS) || os(tvOS) || os(visionOS)
 import UIKit
 
 internal final class PassthroughWindow: UIWindow {
@@ -43,5 +43,12 @@ internal final class PassthroughWindow: UIWindow {
   }
 
   private weak var hitTestView: UIView?
+}
+#elseif os(macOS)
+import AppKit
+
+internal final class PassthroughPanel: NSPanel {
+  override var canBecomeKey: Bool { false }
+  override var canBecomeMain: Bool { false }
 }
 #endif

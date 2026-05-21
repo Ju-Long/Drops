@@ -21,15 +21,13 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
-#if os(iOS) || os(visionOS)
+#if os(iOS) || os(tvOS) || os(visionOS)
 import UIKit
 
 internal final class DropView: UIView {
   required init(drop: Drop) {
     self.drop = drop
     super.init(frame: .zero)
-
-    backgroundColor = .secondarySystemBackground
 
     addSubview(stackView)
 
@@ -43,14 +41,21 @@ internal final class DropView: UIView {
   }
 
   override var frame: CGRect {
-    didSet { layer.cornerRadius = frame.cornerRadius }
+    didSet {
+      layer.cornerRadius = frame.cornerRadius
+      glassEffectView?.layer.cornerRadius = frame.cornerRadius
+    }
   }
 
   override var bounds: CGRect {
-    didSet { layer.cornerRadius = frame.cornerRadius }
+    didSet {
+      layer.cornerRadius = frame.cornerRadius
+      glassEffectView?.layer.cornerRadius = frame.cornerRadius
+    }
   }
 
   let drop: Drop
+  private var glassEffectView: UIVisualEffectView?
 
   func createLayoutConstraints(for drop: Drop) -> [NSLayoutConstraint] {
     var constraints: [NSLayoutConstraint] = []
@@ -101,17 +106,20 @@ internal final class DropView: UIView {
   }
 
   func configureViews(for drop: Drop) {
-    clipsToBounds = true
-
     titleLabel.text = drop.title
     titleLabel.numberOfLines = drop.titleNumberOfLines
+    titleLabel.textColor = drop.titleColor ?? .label
 
     subtitleLabel.text = drop.subtitle
     subtitleLabel.numberOfLines = drop.subtitleNumberOfLines
     subtitleLabel.isHidden = drop.subtitle == nil
+    subtitleLabel.textColor = drop.subtitleColor ?? (UIAccessibility.isDarkerSystemColorsEnabled ? .label : .secondaryLabel)
 
     imageView.image = drop.icon
     imageView.isHidden = drop.icon == nil
+    if let iconColor = drop.iconColor {
+      imageView.tintColor = iconColor
+    }
 
     button.setImage(drop.action?.icon, for: .normal)
     button.isHidden = drop.action?.icon == nil
@@ -121,15 +129,34 @@ internal final class DropView: UIView {
       addGestureRecognizer(tap)
     }
 
-    layer.shadowColor = UIColor.black.cgColor
-    layer.shadowOffset = .zero
-    layer.shadowRadius = 25
-    layer.shadowOpacity = 0.15
-    layer.shouldRasterize = true
-      #if os(iOS)
-    layer.rasterizationScale = UIScreen.main.scale
-      #endif
-    layer.masksToBounds = false
+    if #available(iOS 26.0, visionOS 26.0, *), drop.background == .glass {
+      backgroundColor = .clear
+      clipsToBounds = true
+      let effect = UIGlassEffect()
+      let effectView = UIVisualEffectView(effect: effect)
+      effectView.translatesAutoresizingMaskIntoConstraints = false
+      effectView.clipsToBounds = true
+      insertSubview(effectView, at: 0)
+      glassEffectView = effectView
+      NSLayoutConstraint.activate([
+        effectView.leadingAnchor.constraint(equalTo: leadingAnchor),
+        effectView.trailingAnchor.constraint(equalTo: trailingAnchor),
+        effectView.topAnchor.constraint(equalTo: topAnchor),
+        effectView.bottomAnchor.constraint(equalTo: bottomAnchor)
+      ])
+    } else {
+      backgroundColor = .secondarySystemBackground
+      clipsToBounds = true
+      layer.shadowColor = UIColor.black.cgColor
+      layer.shadowOffset = .zero
+      layer.shadowRadius = 25
+      layer.shadowOpacity = 0.15
+      layer.shouldRasterize = true
+        #if os(iOS)
+      layer.rasterizationScale = UIScreen.main.scale
+        #endif
+      layer.masksToBounds = false
+    }
   }
 
   @objc
@@ -164,7 +191,6 @@ internal final class DropView: UIView {
     view.translatesAutoresizingMaskIntoConstraints = false
     view.contentMode = .scaleAspectFit
     view.clipsToBounds = true
-    view.tintColor = UIAccessibility.isDarkerSystemColorsEnabled ? .label : .secondaryLabel
     return view
   }()
 

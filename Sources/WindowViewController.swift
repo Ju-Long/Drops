@@ -21,7 +21,7 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
-#if os(iOS) || os(visionOS)
+#if os(iOS) || os(tvOS) || os(visionOS)
 import UIKit
 
 internal final class WindowViewController: UIViewController {
@@ -38,6 +38,7 @@ internal final class WindowViewController: UIViewController {
     return nil
   }
 
+  #if os(iOS)
   override var preferredStatusBarStyle: UIStatusBarStyle {
     // Workaround for https://github.com/omaralbeik/Drops/pull/22
     let app = UIApplication.shared
@@ -50,11 +51,12 @@ internal final class WindowViewController: UIViewController {
       ?? windowScene?.statusBarManager?.statusBarStyle
       ?? .default
   }
+  #endif
 
   func install() {
-      #if os(iOS)
+    #if os(iOS)
     window?.frame = UIScreen.main.bounds
-      #endif
+    #endif
     window?.isHidden = false
     if let window = window, let activeScene = UIApplication.shared.activeWindowScene {
       window.windowScene = activeScene
@@ -95,5 +97,49 @@ internal extension UIViewController {
     }
     return self
   }
+}
+#elseif os(macOS)
+import AppKit
+
+internal final class WindowViewController: NSViewController {
+  init() {
+    super.init(nibName: nil, bundle: nil)
+  }
+
+  required init?(coder: NSCoder) { nil }
+
+  override func loadView() {
+    view = PassthroughView()
+  }
+
+  func install() {
+    guard panel == nil else { return }
+    let newPanel = PassthroughPanel(
+      contentRect: .zero,
+      styleMask: [.borderless, .nonactivatingPanel],
+      backing: .buffered,
+      defer: false
+    )
+    newPanel.contentViewController = self
+    newPanel.isOpaque = false
+    newPanel.backgroundColor = .clear
+    newPanel.level = .floating
+    newPanel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+    newPanel.hasShadow = false
+
+    if let screen = NSScreen.main {
+      newPanel.setFrame(screen.visibleFrame, display: false)
+    }
+    newPanel.orderFront(nil)
+    panel = newPanel
+  }
+
+  func uninstall() {
+    panel?.orderOut(nil)
+    panel?.contentViewController = nil
+    panel = nil
+  }
+
+  private var panel: PassthroughPanel?
 }
 #endif

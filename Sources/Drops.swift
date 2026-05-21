@@ -21,13 +21,19 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
-#if os(iOS) || os(visionOS)
+#if os(iOS) || os(tvOS) || os(visionOS) || os(macOS)
+#if os(macOS)
+import AppKit
+#else
 import UIKit
+#endif
 
 internal typealias AnimationCompletion = (_ completed: Bool) -> Void
 
 /// A shared class used to show and hide drops.
 @available(iOSApplicationExtension, unavailable)
+@available(tvOSApplicationExtension, unavailable)
+@available(macOSApplicationExtension, unavailable)
 public final class Drops {
   /// Handler.
   public typealias DropHandler = (Drop) -> Void
