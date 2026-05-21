@@ -254,9 +254,8 @@ internal final class Animator {
   weak var delegate: AnimatorDelegate?
 
   var context: AnimationContext?
-  private var positionConstraint: NSLayoutConstraint?
 
-  let showDuration: TimeInterval = 0.4
+  let showDuration: TimeInterval = 0.35
   let hideDuration: TimeInterval = 0.25
   let bounceOffset: CGFloat = 5
 
@@ -274,28 +273,17 @@ internal final class Animator {
       view.trailingAnchor.constraint(lessThanOrEqualTo: container.trailingAnchor, constant: -20)
     ]
 
-    let posConstraint: NSLayoutConstraint
     switch position {
     case .top:
-      posConstraint = view.topAnchor.constraint(equalTo: container.topAnchor, constant: bounceOffset)
+      constraints.append(view.topAnchor.constraint(equalTo: container.topAnchor, constant: bounceOffset))
     case .bottom:
-      posConstraint = view.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -bounceOffset)
+      constraints.append(view.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -bounceOffset))
     }
 
-    constraints.append(posConstraint)
     NSLayoutConstraint.activate(constraints)
     container.layoutSubtreeIfNeeded()
 
-    // Move view off-screen before animating in
-    switch position {
-    case .top:
-      posConstraint.constant = -(view.frame.height + bounceOffset)
-    case .bottom:
-      posConstraint.constant = view.frame.height + bounceOffset
-    }
-
-    positionConstraint = posConstraint
-    container.layoutSubtreeIfNeeded()
+    view.alphaValue = 0
   }
 
   func show(context: AnimationContext, completion: @escaping AnimationCompletion) {
@@ -305,22 +293,11 @@ internal final class Animator {
 
   func hide(context: AnimationContext, completion: @escaping AnimationCompletion) {
     let view = context.view
-    let container = context.container
-
-    let offScreenConstant: CGFloat
-    switch position {
-    case .top:
-      offScreenConstant = -(view.frame.height + bounceOffset)
-    case .bottom:
-      offScreenConstant = view.frame.height + bounceOffset
-    }
 
     NSAnimationContext.runAnimationGroup({ ctx in
       ctx.duration = hideDuration
       ctx.allowsImplicitAnimation = true
       ctx.timingFunction = CAMediaTimingFunction(name: .easeIn)
-      positionConstraint?.constant = offScreenConstant
-      container.layoutSubtreeIfNeeded()
       view.animator().alphaValue = 0
     }, completionHandler: {
       completion(true)
@@ -333,24 +310,13 @@ internal final class Animator {
       return
     }
     let view = context.view
-    let container = context.container
 
     view.alphaValue = 0
-
-    let targetConstant: CGFloat
-    switch position {
-    case .top:
-      targetConstant = bounceOffset
-    case .bottom:
-      targetConstant = -bounceOffset
-    }
 
     NSAnimationContext.runAnimationGroup({ ctx in
       ctx.duration = showDuration
       ctx.allowsImplicitAnimation = true
       ctx.timingFunction = CAMediaTimingFunction(name: .easeOut)
-      positionConstraint?.constant = targetConstant
-      container.layoutSubtreeIfNeeded()
       view.animator().alphaValue = 1
     }, completionHandler: {
       completion(true)

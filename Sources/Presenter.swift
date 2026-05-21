@@ -101,7 +101,7 @@ internal final class Presenter: NSObject {
   init(drop: Drop, delegate: AnimatorDelegate) {
     self.drop = drop
     view = DropView(drop: drop)
-    viewController = .init(value: WindowViewController())
+    viewController = WindowViewController()
     animator = Animator(position: drop.position, delegate: delegate)
     context = AnimationContext(view: view, container: maskingView)
   }
@@ -123,7 +123,7 @@ internal final class Presenter: NSObject {
   func hide(animated: Bool, completion: @escaping AnimationCompletion) {
     isHiding = true
     let action = { [weak self] in
-      self?.viewController.value?.uninstall()
+      self?.viewController?.uninstall()
       self?.maskingView.removeFromSuperview()
       completion(true)
     }
@@ -138,11 +138,11 @@ internal final class Presenter: NSObject {
 
   let maskingView = PassthroughView()
   let view: NSView
-  let viewController: Weak<WindowViewController>
+  var viewController: WindowViewController?
   let context: AnimationContext
 
   func install() {
-    guard let container = viewController.value else { return }
+    guard let container = viewController else { return }
     let containerView = container.view
 
     container.install()
@@ -162,11 +162,11 @@ internal final class Presenter: NSObject {
 
   func announcementAccessibilityMessage(for drop: Drop) {
     NSAccessibility.post(
-      element: NSApp as AnyObject,
+      element: NSApp as Any,
       notification: .announcementRequested,
       userInfo: [
-        NSAccessibility.UserInfoKey.announcement: drop.accessibility.message,
-        NSAccessibility.UserInfoKey.priority: NSAccessibility.PriorityLevel.high.rawValue
+        .announcement: drop.accessibility.message,
+        .priority: NSAccessibilityPriorityLevel.high.rawValue
       ]
     )
   }

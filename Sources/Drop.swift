@@ -34,6 +34,7 @@ import AppKit
 @available(tvOSApplicationExtension, unavailable)
 @available(macOSApplicationExtension, unavailable)
 public struct Drop: ExpressibleByStringLiteral {
+  #if os(macOS)
   /// Create a new drop.
   /// - Parameters:
   ///   - title: Title.
@@ -46,7 +47,7 @@ public struct Drop: ExpressibleByStringLiteral {
   ///   - subtitleColor: Optional subtitle text color. Defaults to `nil` which uses the system secondary label color.
   ///   - icon: Optional icon.
   ///   - iconColor: Optional icon tint color. Defaults to `nil` which uses the app's accent color.
-  ///   - background: Background style. Defaults to `.standard`. Use `.glass` for Liquid Glass effect (iOS/macOS 26+).
+  ///   - background: Background style. Defaults to `.standard`. Use `.glass` for Liquid Glass effect (macOS 26+).
   ///   - action: Optional action.
   ///   - position: Position. Defaults to `Drop.Position.top`.
   ///   - duration: Duration. Defaults to `Drop.Duration.recommended`.
@@ -54,21 +55,12 @@ public struct Drop: ExpressibleByStringLiteral {
   public init(
     title: String,
     titleNumberOfLines: Int = 1,
-    #if os(macOS)
     titleColor: NSColor? = nil,
     subtitle: String? = nil,
     subtitleNumberOfLines: Int = 1,
     subtitleColor: NSColor? = nil,
     icon: NSImage? = nil,
     iconColor: NSColor? = nil,
-    #else
-    titleColor: UIColor? = nil,
-    subtitle: String? = nil,
-    subtitleNumberOfLines: Int = 1,
-    subtitleColor: UIColor? = nil,
-    icon: UIImage? = nil,
-    iconColor: UIColor? = nil,
-    #endif
     background: Background = .standard,
     action: Action? = nil,
     position: Position = .top,
@@ -92,6 +84,57 @@ public struct Drop: ExpressibleByStringLiteral {
     self.accessibility = accessibility
     ?? .init(message: [title, subtitle].compactMap { $0 }.joined(separator: ", "))
   }
+  #else
+  /// Create a new drop.
+  /// - Parameters:
+  ///   - title: Title.
+  ///   - titleNumberOfLines: Maximum number of lines that `title` can occupy. Defaults to `1`.
+  ///   A value of 0 means no limit.
+  ///   - titleColor: Optional title text color. Defaults to `nil` which uses the system label color.
+  ///   - subtitle: Optional subtitle. Defaults to `nil`.
+  ///   - subtitleNumberOfLines: Maximum number of lines that `subtitle` can occupy. Defaults to `1`.
+  ///   A value of 0 means no limit.
+  ///   - subtitleColor: Optional subtitle text color. Defaults to `nil` which uses the system secondary label color.
+  ///   - icon: Optional icon.
+  ///   - iconColor: Optional icon tint color. Defaults to `nil` which uses the app's accent color.
+  ///   - background: Background style. Defaults to `.standard`. Use `.glass` for Liquid Glass effect (iOS 26+).
+  ///   - action: Optional action.
+  ///   - position: Position. Defaults to `Drop.Position.top`.
+  ///   - duration: Duration. Defaults to `Drop.Duration.recommended`.
+  ///   - accessibility: Accessibility options. Defaults to `nil` which will use "title, subtitle" as its message.
+  public init(
+    title: String,
+    titleNumberOfLines: Int = 1,
+    titleColor: UIColor? = nil,
+    subtitle: String? = nil,
+    subtitleNumberOfLines: Int = 1,
+    subtitleColor: UIColor? = nil,
+    icon: UIImage? = nil,
+    iconColor: UIColor? = nil,
+    background: Background = .standard,
+    action: Action? = nil,
+    position: Position = .top,
+    duration: Duration = .recommended,
+    accessibility: Accessibility? = nil
+  ) {
+    self.title = title.trimmingCharacters(in: .whitespacesAndNewlines)
+    self.titleNumberOfLines = titleNumberOfLines
+    self.titleColor = titleColor
+    if let subtitle = subtitle?.trimmingCharacters(in: .whitespacesAndNewlines), !subtitle.isEmpty {
+      self.subtitle = subtitle
+    }
+    self.subtitleNumberOfLines = subtitleNumberOfLines
+    self.subtitleColor = subtitleColor
+    self.icon = icon
+    self.iconColor = iconColor
+    self.background = background
+    self.action = action
+    self.position = position
+    self.duration = duration
+    self.accessibility = accessibility
+    ?? .init(message: [title, subtitle].compactMap { $0 }.joined(separator: ", "))
+  }
+  #endif
 
   /// Create a drop from a string literal.
   /// - Parameter title: Title string.
@@ -207,17 +250,23 @@ public extension Drop {
     /// - Parameters:
     ///   - icon: Optional icon image.
     ///   - handler: Handler to be called when the drop is tapped.
+    #if os(macOS)
     public init(
-      #if os(macOS)
       icon: NSImage? = nil,
-      #else
-      icon: UIImage? = nil,
-      #endif
       handler: @escaping () -> Void
     ) {
       self.icon = icon
       self.handler = handler
     }
+    #else
+    public init(
+      icon: UIImage? = nil,
+      handler: @escaping () -> Void
+    ) {
+      self.icon = icon
+      self.handler = handler
+    }
+    #endif
 
     #if os(macOS)
     /// Icon.
