@@ -47,7 +47,7 @@ public struct Drop: ExpressibleByStringLiteral {
   ///   - subtitleColor: Optional subtitle text color. Defaults to `nil` which uses the system secondary label color.
   ///   - icon: Optional icon.
   ///   - iconColor: Optional icon tint color. Defaults to `nil` which uses the app's accent color.
-  ///   - background: Background style. Defaults to `.standard`. Use `.glass` for Liquid Glass effect (macOS 26+).
+  ///   - background: Background style. Defaults to `.glass` on macOS 26+ and `.standard` on earlier versions.
   ///   - action: Optional action.
   ///   - position: Position. Defaults to `Drop.Position.top`.
   ///   - duration: Duration. Defaults to `Drop.Duration.recommended`.
@@ -61,7 +61,7 @@ public struct Drop: ExpressibleByStringLiteral {
     subtitleColor: NSColor? = nil,
     icon: NSImage? = nil,
     iconColor: NSColor? = nil,
-    background: Background = .standard,
+    background: Background = .default,
     action: Action? = nil,
     position: Position = .top,
     duration: Duration = .recommended,
@@ -97,7 +97,7 @@ public struct Drop: ExpressibleByStringLiteral {
   ///   - subtitleColor: Optional subtitle text color. Defaults to `nil` which uses the system secondary label color.
   ///   - icon: Optional icon.
   ///   - iconColor: Optional icon tint color. Defaults to `nil` which uses the app's accent color.
-  ///   - background: Background style. Defaults to `.standard`. Use `.glass` for Liquid Glass effect (iOS 26+).
+  ///   - background: Background style. Defaults to `.glass` on iOS/tvOS/visionOS 26+ and `.standard` on earlier versions.
   ///   - action: Optional action.
   ///   - position: Position. Defaults to `Drop.Position.top`.
   ///   - duration: Duration. Defaults to `Drop.Duration.recommended`.
@@ -111,7 +111,7 @@ public struct Drop: ExpressibleByStringLiteral {
     subtitleColor: UIColor? = nil,
     icon: UIImage? = nil,
     iconColor: UIColor? = nil,
-    background: Background = .standard,
+    background: Background = .default,
     action: Action? = nil,
     position: Position = .top,
     duration: Duration = .recommended,
@@ -142,7 +142,7 @@ public struct Drop: ExpressibleByStringLiteral {
     self.title = title
     titleNumberOfLines = 1
     subtitleNumberOfLines = 1
-    background = .standard
+    background = .default
     position = .top
     duration = .recommended
     accessibility = .init(message: title)
@@ -288,6 +288,21 @@ public extension Drop {
     case standard
     /// Liquid Glass material background. Falls back to `.standard` on platforms prior to iOS/macOS 26.
     case glass
+
+    /// The platform-appropriate default background.
+    /// Returns `.glass` on iOS/tvOS/visionOS/macOS 26.0+ and `.standard` on earlier versions.
+    public static var `default`: Background {
+      #if os(iOS) || os(tvOS) || os(visionOS)
+      if #available(iOS 26.0, tvOS 26.0, visionOS 26.0, *) {
+        return .glass
+      }
+      #elseif os(macOS)
+      if #available(macOS 26.0, *) {
+        return .glass
+      }
+      #endif
+      return .standard
+    }
   }
 }
 
